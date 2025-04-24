@@ -4,6 +4,7 @@ import helmet from 'helmet';
 
 import authRouter from '@/routes/auth';
 import { authenticate } from './middleware/auth';
+import { errorHandler } from './middleware/errorHandler';
 
 const app = express();
 
@@ -16,5 +17,7 @@ app.use('/', authRouter);
 app.get('/protected', authenticate, (req, res) => {
     res.status(200).json({ message: 'This is a protected route' });
 });
+
+app.use(errorHandler);
 
 export default app;
