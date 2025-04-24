@@ -12,6 +12,11 @@ export const signup = async function (
 ): Promise<void> {
     const { email, password } = req.body;
 
+    if (!email || !password) {
+        res.status(400).json({ message: 'Email and password are required' });
+        return;
+    }
+
     const candidate = await db.query.users.findFirst({
         where: eq(users.email, email),
     });
