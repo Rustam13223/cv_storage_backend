@@ -49,7 +49,7 @@ export const signup = async function (
     }
 
     const token = jwt.sign(
-        { email: createdUser[0].email },
+        { email: createdUser[0].email, userId: createdUser[0].id },
         process.env.JWT_SECRET as string,
         {
             expiresIn: process.env.JWT_EXPIRATION as ms.StringValue,

@@ -34,7 +34,7 @@ export const signin = async function (
     }
 
     const token = jwt.sign(
-        { email: candidate.email },
+        { email: candidate.email, userId: candidate.id },
         process.env.JWT_SECRET as string,
         {
             expiresIn: process.env.JWT_EXPIRATION as ms.StringValue,

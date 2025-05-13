@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import authRouter from '@/routes/auth';
 import { authenticate } from './middleware/auth';
 import { errorHandler } from './middleware/errorHandler';
+import projectsRouter from './routes/projects';
 
 const app = express();
 
@@ -13,6 +14,7 @@ app.use(helmet());
 app.use(express.json());
 
 app.use('/', authRouter);
+app.use('/', authenticate, projectsRouter);
 
 app.get('/protected', authenticate, (req, res) => {
     res.status(200).json({ message: 'This is a protected route' });
