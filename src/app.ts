@@ -6,8 +6,15 @@ import authRouter from '@/routes/auth';
 import { authenticate } from './middleware/auth';
 import { errorHandler } from './middleware/errorHandler';
 import projectsRouter from './routes/projects';
+import cors from 'cors';
 
 const app = express();
+
+app.use(
+    cors({
+        origin: 'http://localhost:3000',
+    })
+);
 
 app.use(morgan('dev'));
 app.use(helmet());
