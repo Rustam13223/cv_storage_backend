@@ -106,12 +106,14 @@ export const create = async function (
         })
     );
 
-    await db.insert(projectTags).values(
-        insertedTags.map((tag) => ({
-            projectId: project[0].id,
-            tagId: tag.id,
-        }))
-    );
+    if (insertedTags.length) {
+        await db.insert(projectTags).values(
+            insertedTags.map((tag) => ({
+                projectId: project[0].id,
+                tagId: tag.id,
+            }))
+        );
+    }
 
     res.status(201).json(project);
 };
