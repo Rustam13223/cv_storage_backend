@@ -1,9 +1,13 @@
 import { Response } from 'express';
 import { AuthenticatedRequest } from '@/middleware/auth';
-import { projects } from '@/db/schema/projects';
 import { db } from '@/db';
-import { and, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { JwtPayload } from '@/middleware/auth';
+import { InferenceClient } from '@huggingface/inference';
+import { TokenClassificationOutput } from '@huggingface/tasks';
+import { tags } from '@/db/schema/tags';
+import { projects } from '@/db/schema/projects';
+import { projectTags } from '@/db/schema/projectTags';
 
 export const deleteById = async function (
     req: AuthenticatedRequest,
@@ -25,10 +29,20 @@ export const getAll = async function (
 ): Promise<void> {
     const userId = req.user?.userId as number;
 
-    const userProjects = await db
-        .select()
-        .from(projects)
-        .where(eq(projects.userId, userId));
+    const userProjects = await db.query.projects.findMany({
+        where: eq(projects.userId, userId),
+        with: {
+            projectTags: {
+                columns: {
+                    tagId: false,
+                    projectId: false,
+                },
+                with: {
+                    tag: true,
+                },
+            },
+        },
+    });
 
     res.status(200).json(userProjects);
 };
@@ -59,6 +73,15 @@ export const create = async function (
         return;
     }
 
+    const client = new InferenceClient(process.env.HF_TOKEN);
+
+    const response = await client.tokenClassification({
+        model: 'dslim/bert-base-NER',
+        inputs: description,
+    });
+
+    const techs = extractTechnologies(response);
+
     const project = await db
         .insert(projects)
         .values({
@@ -67,6 +90,28 @@ export const create = async function (
             description,
         })
         .returning();
+
+    const insertedTags = await Promise.all(
+        techs.map(async (name) => {
+            const existing = await db.query.tags.findFirst({
+                where: (t, { eq }) => eq(t.name, name),
+            });
+            if (existing) return existing;
+
+            const [inserted] = await db
+                .insert(tags)
+                .values({ name })
+                .returning();
+            return inserted;
+        })
+    );
+
+    await db.insert(projectTags).values(
+        insertedTags.map((tag) => ({
+            projectId: project[0].id,
+            tagId: tag.id,
+        }))
+    );
 
     res.status(201).json(project);
 };
@@ -106,3 +151,16 @@ export const update = async function (
 
     res.status(200).json(updatedProject);
 };
+
+function extractTechnologies(nerResults: TokenClassificationOutput): string[] {
+    const techTags = new Set();
+    const keywords = ['ORG', 'MISC'];
+
+    nerResults.forEach((entity) => {
+        if (keywords.includes(entity.entity_group as string)) {
+            techTags.add(entity.word);
+        }
+    });
+
+    return Array.from(techTags) as string[];
+}
