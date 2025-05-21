@@ -55,6 +55,17 @@ export const getById = async function (
 
     const project = await db.query.projects.findFirst({
         where: () => eq(projects.id, Number(projectId)),
+        with: {
+            projectTags: {
+                columns: {
+                    tagId: false,
+                    projectId: false,
+                },
+                with: {
+                    tag: true,
+                },
+            },
+        },
     });
 
     res.status(200).json(project);

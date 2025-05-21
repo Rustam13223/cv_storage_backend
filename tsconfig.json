@@ -4,13 +4,14 @@
         "module": "commonjs",
         "outDir": "./dist",
         "rootDir": "./src",
+        "moduleResolution": "node",
         "strict": true,
         "esModuleInterop": true,
         "skipLibCheck": true,
 
-        "baseUrl": "src",
+        "baseUrl": "./",
         "paths": {
-            "@/*": ["*"]
+            "@/*": ["src/*"]
         }
     },
     "exclude": ["./drizzle.config.ts"],
